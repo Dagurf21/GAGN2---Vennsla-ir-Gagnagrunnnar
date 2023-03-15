@@ -79,3 +79,68 @@ CALL `delete_course`('FORR1FG05AU');
 -- Áfangi sem er nú þegar til og hægt að eyða
 CALL `delete_course`('BLOP3BU05CU');
 CALL `get_course_info`('BLOP3BU05CU');
+
+-- Liður 6 / Reikna út(telja) heildarfjölda áfanga með Function 
+Drop function if exists count_courses;
+
+DELIMITER $$
+CREATE FUNCTION `count_courses` () RETURNS INT
+DETERMINISTIC
+NO SQL
+READS SQL DATA
+BEGIN
+    DECLARE `course_count` INT DEFAULT 0;
+    SELECT COUNT(*) INTO `course_count` FROM `courses`;
+    RETURN `course_count`;
+END $$
+DELIMITER ;
+
+SELECT `count_courses`();
+
+-- Liður 8 / Skrifa Function sem kannar hvort að ákv. dagsetning(date) sé á hlaupári
+DELIMITER $$
+CREATE FUNCTION `is_leap_year` (`year` INT) RETURNS BOOLEAN
+DETERMINISTIC
+BEGIN
+    IF `year` % 4 = 0 AND (`year` % 100 != 0 OR `year` % 400 = 0) THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END $$
+DELIMITER ;
+
+SELECT `is_leap_year`(2024);
+
+-- Liður 9 / 
+DELIMITER $$
+CREATE FUNCTION `calculate_age` (`birth_date` VARCHAR(10)) RETURNS INT
+DETERMINISTIC
+NO SQL
+READS SQL DATA
+BEGIN
+    DECLARE `dob` DATE;
+    SET `dob` = STR_TO_DATE(`birth_date`, '%Y.%m.%d');
+    RETURN YEAR(CURDATE()) - YEAR(`dob`) - (DATE_FORMAT(CURDATE(), '%m%d') < DATE_FORMAT(`dob`, '%m%d'));
+END $$
+DELIMITER ;
+SELECT `calculate_age`('1995.03.25');
+
+-- Liður 10 / Stored Procedure sem skilar öllum nemendum á ákveðinni önn(semester)
+drop procedure if exists GetStudentsBySemester;
+DELIMITER $$
+CREATE PROCEDURE GetStudentsBySemester(IN semesterID INT)
+BEGIN
+	SELECT s.studentID, s.firstName, s.lastName, s.dob, ss.statusName, t.trackName, d.divisionName, sch.schoolName 
+	FROM Students s 
+	INNER JOIN Registration r ON s.studentID = r.studentID 
+	INNER JOIN TrackCourses tc ON r.courseNumber = tc.courseNumber 
+	INNER JOIN Tracks t ON tc.trackID = t.trackID 
+	INNER JOIN Divisions d ON t.divisionID = d.divisionID 
+	INNER JOIN Schools sch ON d.schoolID = sch.schoolID 
+	INNER JOIN Semesters sem ON r.semesterID = sem.semesterID 
+	INNER JOIN StudentStatus ss ON s.studentStatus = ss.ID
+	WHERE sem.semesterID = semesterID;
+END $$
+DELIMITER ;
+CALL GetStudentsBySemester(17);
