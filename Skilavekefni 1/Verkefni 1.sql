@@ -96,6 +96,22 @@ END $$
 DELIMITER ;
 
 SELECT `count_courses`();
+-- Liður 7 --
+delimiter $$
+create function TrackTotalCredits(track_id int)
+returns int deterministic
+begin
+    declare creditSum int;
+
+    select sum(Courses.courseCredits) into creditSum
+    from courses
+    inner join TrackCourses on Courses.courseNumber = TrackCourses.courseNumber and trackCourses.trackID = track_id;
+
+    return creditSum;
+end $$
+delimiter ;
+
+select TrackTotalCredits(9);
 
 -- Liður 8 / Skrifa Function sem kannar hvort að ákv. dagsetning(date) sé á hlaupári
 DELIMITER $$
